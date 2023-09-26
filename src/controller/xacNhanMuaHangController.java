@@ -76,38 +76,19 @@ public class xacNhanMuaHangController extends HttpServlet {
 							break;
 						}
 					}
-					String tt = "";
-					if (!txtDC.isEmpty()) {
-						tt = txtDC.substring(0, 1);
-					}
-					System.out.println(txtHT);
-					if (txtHT.isEmpty() || !txtHT.matches("^[\\p{InCombiningDiacriticalMarks}\\p{IsL}\\s]+$")
-							|| txtDC.isEmpty() || !tt.matches(".*\\d.*") || txtSDT.isEmpty()
-							|| !txtSDT.matches("^[0-9]+$") || txtSDT.length() != 10 || txtEM.isEmpty()
-							|| !txtEM.matches(".*@gmail\\.com$") || checkSoLuong || !captcha.isCorrect(answer)) {
-						if (txtHT.isEmpty()) {
-							request.setAttribute("tenTrong", "Vui lòng nhập họ và tên người mua");
-						} else if (!txtHT.matches("^[\\p{InCombiningDiacriticalMarks}\\p{IsL}\\s]+$")) {
-							request.setAttribute("tenTrong", "Tên của bạn có kí tự số hoặc kí tự đặc biệt");
-						}
-						if (txtDC.isEmpty()) {
-							request.setAttribute("diaChiTrong", "Vui lòng nhập địa chỉ");
-						} else if (!tt.matches(".*\\d.*")) {
-							request.setAttribute("diaChiTrong", "Địa chỉ chưa có số nhà");
-						}
-						if (txtSDT.isEmpty()) {
-							request.setAttribute("SDTTrong", "Vui lòng nhập số điện thoại");
-						} else if (!txtSDT.matches("^[0-9]+$")) {
-							request.setAttribute("SDTTrong", "Số điện thoại có kí tự đặc biệt");
-						}
-						if (txtSDT.length() != 10) {
-							request.setAttribute("SaiSDT", "Số điện thoại có độ dài khác 10 chữ số");
-						}
-						if (txtEM.isEmpty()) {
-							request.setAttribute("emailTrong", "Vui lòng nhập email");
-						} else if (!txtEM.matches(".*@gmail\\.com$")) {
-							request.setAttribute("emailTrong", "Định dạng email không hợp lệ");
-						}
+
+					functionUser functionUser = new functionUser();
+					boolean checkHoTen = functionUser.checkHoTen(txtHT);
+					boolean checkSDT = functionUser.checkSDT(txtSDT);
+					boolean checkEmail = functionUser.checkEmail(txtEM);
+					boolean checkDiaChi = functionUser.checkDiaChi(txtDC);
+					if (!checkHoTen || !checkDiaChi || !checkSDT || !checkEmail || checkSoLuong
+							|| !captcha.isCorrect(answer)) {
+
+						functionUser.requestTruongHoTen(txtHT, request);
+						functionUser.requestTruongDiaChi(txtDC, request);
+						functionUser.requestTruongSDT(txtSDT, request);
+						functionUser.requestTruongEmail(txtEM, request);
 						if (checkSoLuong) {
 							request.setAttribute("soLuongTrong",
 									"Mặt hàng " + giay.getTenGiay() + " đã hết, hãy chọn mặt hàng khác");

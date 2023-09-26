@@ -55,14 +55,15 @@ public class adminThemMatHangController extends HttpServlet {
 			List<FileItem> fileItems = upload.parseRequest(request);// Lấy về các đối tượng gửi lên
 			// duyệt qua các đối tượng gửi lên từ client gồm file và các control
 
-			String txtTenHang = null;
-			String txtGia = null;
-			String txtSoLuong = null;
-			String txtMauSac = null;
-			String txtMLoai = null;
-			String txtSize = null;
+			String txtTenHang = "";
+			String txtGia = "";
+			String txtSoLuong = "";
+			String txtMauSac = "";
+			String txtMLoai = "";
+			String txtSize = "";
 			String anh = null;
 			String folder = null;
+			double sizeImage = 0;
 			ArrayList<Integer> dssize = new ArrayList<Integer>();
 
 			for (FileItem fileItem : fileItems) {
@@ -83,8 +84,11 @@ public class adminThemMatHangController extends HttpServlet {
 							fileItem.write(file);// lưu file
 							anh = nameimg;
 							System.out.println("UPLOAD THÀNH CÔNG...!");
-
 							System.out.println("Đường dẫn lưu file là: " + dirUrl);
+							sizeImage = ((double) file.length() / 1048576);
+							sizeImage = Math.floor(sizeImage * 10) / 10;
+							System.out.println("Size: " + anh);
+
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
@@ -104,6 +108,7 @@ public class adminThemMatHangController extends HttpServlet {
 					if (tentk.equals("txtMaLoai"))
 						txtMLoai = fileItem.getString("UTF-8");
 					folder = "GiayThem\\" + anh;
+
 					if (tentk.equals("txtSize")) {
 						txtSize = fileItem.getString("UTF-8");
 						dssize.add(Integer.parseInt(txtSize));
@@ -113,47 +118,31 @@ public class adminThemMatHangController extends HttpServlet {
 			try {
 
 				AdminQuanLyMatHangbo adminQLMHbo = new AdminQuanLyMatHangbo();
+				functionAdmin function = new functionAdmin();
+
+				boolean duoiAnh = function.checkDuoiAnh(anh);
+				boolean checkTenSP = function.checkTenSanPham(txtTenHang);
+				boolean checkGia = function.checkGia(txtGia);
+				boolean checkSoLuong = function.checkSoLuong(txtSoLuong);
+				boolean checkMauSac = function.checkMauSac(txtMauSac);
 				if (adminQLMHbo.KiemTraTenMatHang(txtTenHang) == 0) {
 					request.setAttribute("trungTen", "Mặt hàng này đã có trong danh sách của bạn");
 					Giaybo gbo = new Giaybo();
 					request.setAttribute("dsGiay", gbo.getDSGiay());
 					RequestDispatcher rd = request.getRequestDispatcher("adminQuanLyMatHang.jsp");
 					rd.forward(request, response);
-				} else if (txtTenHang.isEmpty()
-						|| txtTenHang.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>?/~`\\s].*") || txtGia.isEmpty()
-						|| !txtGia.matches("^[0-9]+$") || Integer.parseInt(txtGia) < 1 || txtSoLuong.isEmpty()
-						|| Integer.parseInt(txtSoLuong) < 1 || !txtSoLuong.matches("^[0-9]+$") || txtMauSac.isEmpty()
-						|| !txtMauSac.matches("^[\\p{InCombiningDiacriticalMarks}\\p{IsL}\\s]+$") || anh == null
+				} else if (!checkTenSP || !checkGia || !checkSoLuong || !checkMauSac || sizeImage > 5 || !duoiAnh
 						|| dssize.size() == 0) {
-					System.out.println(txtGia.matches("\\d+"));
-					if (anh == null) {
-						request.setAttribute("anhTrong", "Chưa chọn ảnh");
+					System.out.println("1");
+					if (!duoiAnh) {
+						request.setAttribute("anhTrong", "Định dạng ảnh không đúng");
+					} else if (sizeImage > 5) {
+						request.setAttribute("anhTrong", "Kích thước của ảnh quá lớn");
 					}
-					if (txtTenHang.isEmpty()) {
-						request.setAttribute("tenTrong", "Chưa nhập tên hàng");
-					} else if (txtTenHang.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>?/~`\\s].*")) {
-						request.setAttribute("tenTrong", "Tên hàng không được có kí tự đặc biệt");
-					}
-					if (txtGia.isEmpty()) {
-						request.setAttribute("giaTrong", "Chưa nhập giá hàng");
-					} else if (!txtGia.matches("^[0-9]+$")) {
-						request.setAttribute("giaTrong", "Giá của mặt hàng không được có kí tự đặc biệt");
-					} else if (Integer.parseInt(txtGia) < 1) {
-						request.setAttribute("giaTrong", "Giá của mặt hàng không được âm");
-					}
-					if (txtSoLuong.isEmpty()) {
-						request.setAttribute("soLuongTrong", "Chưa nhập số lượng");
-					} else if (!txtSoLuong.matches("^[0-9]+$")) {
-						request.setAttribute("soLuongTrong", "Số lượng mặt hàng không được có kí tự đặc biệt");
-					} else if (Integer.parseInt(txtSoLuong) < 1) {
-						request.setAttribute("soLuongTrong", "Số lượng mặt hàng phải lớn hơn 1");
-					}
-
-					if (txtMauSac.isEmpty()) {
-						request.setAttribute("mauSacTrong", "Chưa nhập màu sắc");
-					} else if (!txtMauSac.matches("^[\\p{InCombiningDiacriticalMarks}\\p{IsL}\\s]+$")) {
-						request.setAttribute("mauSacTrong", "Màu sắc không được có kí tự số hoặc kí tự đặc biệt");
-					}
+					function.requestTruongTenSP(txtTenHang, request);
+					function.requestTruongGia(txtGia, request);
+					function.requestTruongSoLuong(txtSoLuong, request);
+					function.requestTruongMauSac(txtMauSac, request);
 					if (dssize.size() == 0) {
 						request.setAttribute("danhSachTrong", "Chưa chọn size");
 					}
@@ -183,6 +172,19 @@ public class adminThemMatHangController extends HttpServlet {
 
 	}
 
+//
+//	void requestTruongAnh(String anh, double imageSize, HttpServletRequest request) {
+//
+//		if (anh == null) {
+//			request.setAttribute("anhTrong", "Chưa chọn ảnh");
+//		} else if (imageSize > 5) {
+//			request.setAttribute("anhTrong", "Kích thước của ảnh quá lớn");
+//		}
+//	}
+
+//	boolean checkTenSanPham(String tenSP) {
+//		
+//	}
 	/**
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse
 	 *      response)
